@@ -38,7 +38,9 @@ public class GameController : MonoBehaviour {
     public float refresh = 1.0f;
     public int gridWidth = 16;
     public int gridHeight = 16;
-    int blockScore = 250;
+    int blockScore = 50;
+    int blockChainSize = 16; // min size to explode
+    public int level = 3; // 3 is base level spawn new color blocks
 
     //long threshold = 7500;
 
@@ -50,7 +52,7 @@ public class GameController : MonoBehaviour {
 
     IEnumerator IncreaseMultiplyer(float delay) {
         yield return new WaitForSeconds(delay);
-        multiplyer += 0.5f + 0.05f * delay;
+        multiplyer += 0.2f + 0.01f * delay;
         minSpawnTime = Mathf.Clamp(minSpawnTime -0.1f, 0.1f, 1f);
         maxSpawnTime = Mathf.Clamp(maxSpawnTime - 0.2f, 1.5f, 3f);
         //powerupChance = Mathf.Clamp(powerupChance + 0.01f, 0.20f, 0.33f);
@@ -60,12 +62,18 @@ public class GameController : MonoBehaviour {
     IEnumerator MoveBlocks(float delay) {      
         UpdateBlocks();
         yield return new WaitForSeconds(delay);
-        refresh = Mathf.Clamp(refresh - .01f, 0.15f, 1f);
+        refresh = Mathf.Clamp(refresh - .003f, 0.15f, 1f);
         StartCoroutine(MoveBlocks(refresh));
     }
 
+    IEnumerator IncrementLevel(float delay) {
+        yield return new WaitForSeconds(delay);
+        level = Mathf.Clamp(level + 1, 3, 10);
+        StartCoroutine(IncrementLevel(delay + 5f)); // increse time between new blocks.  currently about 3 minutes to reach all blocks
+    }
+
     IEnumerator rotateScreen(float time, float direction) {
-        int steps = 30;
+        int steps = 15;
         if (direction == 90f) {
             gravityDirection++;
         } else if (direction == -90f) {
@@ -116,7 +124,7 @@ public class GameController : MonoBehaviour {
                     if (blockGrid[i, k] != null) {
                         List<GameObject> b = new List<GameObject>();
                         b = blockGrid[i, k].GetComponent<Block>().checkColors(b);
-                        if (b.Count >= 3) {
+                        if (b.Count >= blockChainSize) {
                             destroyBlocks(b);
                         }
                         if (blockGrid[i, k] == null)
@@ -148,7 +156,7 @@ public class GameController : MonoBehaviour {
                         if (blockGrid[i, k] != null) {
                             List<GameObject> b = new List<GameObject>();
                             b = blockGrid[i, k].GetComponent<Block>().checkColors(b);
-                            if (b.Count >= 3) {
+                            if (b.Count >= blockChainSize) {
                                 destroyBlocks(b);
                             }
                             if (blockGrid[i, k] == null)
@@ -177,11 +185,18 @@ public class GameController : MonoBehaviour {
             }
     }
 
-    void destroyBlocks(List<GameObject> b) {
+    void destroyBlocks(List<GameObject> a) {
+        List<GameObject> b = new List<GameObject>();
+        for (int i = 0; i < a.Count; i++) {
+            if (!b.Contains(a[i]))
+                b.Add(a[i]);
+        }
+
         for (int j = 0; j < b.Count; j++) {
+            print(b[j].GetComponent<Block>().x + " " + b[j].GetComponent<Block>().y);
             Destroy(blockGrid[b[j].GetComponent<Block>().x, b[j].GetComponent<Block>().y]);
-            //Destroy(b[j]);
-            score += (int)Mathf.Pow(j, 2f) / 2 * blockScore;
+            Destroy(b[j]);
+            score += (long)(((int)Mathf.Pow(j, 2f) / 2 * blockScore) * multiplyer);
             //blockGrid[b[j].GetComponent<Block>().x, b[j].GetComponent<Block>().y] = null;
             //Destroy(b[j]);
             //destory and add to points
@@ -293,8 +308,9 @@ public class GameController : MonoBehaviour {
                 blockGrid[i, k] = null;
             }
         }
-        StartCoroutine(IncreaseMultiplyer(2f));
+        StartCoroutine(IncreaseMultiplyer(10f));
         StartCoroutine(MoveBlocks(1f));
+        StartCoroutine(IncrementLevel(25f));
     }
 	
 	// Update is called once per frame
@@ -316,10 +332,10 @@ public class GameController : MonoBehaviour {
         }
 
         if (Input.GetButtonDown("Right")){
-            StartCoroutine(rotateScreen(0.1f, 90));
+            StartCoroutine(rotateScreen(0.05f, 90));
         }
         if (Input.GetButtonDown("Left")) {
-            StartCoroutine(rotateScreen(0.1f, -90));
+            StartCoroutine(rotateScreen(0.05f, -90));
         }
 
         if (Input.GetButtonDown("Push")) {
@@ -336,12 +352,11 @@ public class GameController : MonoBehaviour {
 	}
 
     void FixedUpdate() {
-        canvas.GetComponent<Text>().text = "SCORE:\n" + score.ToString();
-        open.Clear();
-        //CheckScore();
-        //playerLayer = player.layer;
-
+        if(!gameOver)
+            canvas.GetComponent<Text>().text = "SCORE:\n" + score.ToString();
+        
         // Check for endgame condition
+        open.Clear();
         for (int i = 0; i < gridWidth; i++) {
             for (int k = 0; k < gridHeight; k++) {
                 if (blockGrid[i, k] == null) {
@@ -350,9 +365,8 @@ public class GameController : MonoBehaviour {
             }
         }
         if (open.Count == 0) {
-            gameOver = true;
+            GameOver();
             print("GAME OVER");
-            //game over
         }
 
         if (sceneStarting)
@@ -360,6 +374,7 @@ public class GameController : MonoBehaviour {
         if (sceneEnding) {
             EndScene();
         }
+
     }
 
     void OnGUI() {
