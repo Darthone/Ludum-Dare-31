@@ -24,7 +24,7 @@ public class GameController : MonoBehaviour {
     bool paused = false;
     public bool canPause = true;
 
-    float fadeSpeed = 3f;          // Speed that the screen fades to and from black.
+    float fadeSpeed = 5f;          // Speed that the screen fades to and from black.
     private bool sceneStarting = true;      // Whether or not the scene is still fading in.
     public bool sceneEnding = false;
     public bool gameOver = false;
@@ -35,13 +35,11 @@ public class GameController : MonoBehaviour {
 
     public long score = 0;
     public float multiplyer = 1.0f;
-    public int gridWidth = 10;
-    public int gridHeight = 10;
+    public int gridWidth = 16;
+    public int gridHeight = 16;
     int blockScore = 250;
 
     //long threshold = 7500;
-
-    //public bool[] underAttack;
 
     public float minSpawnTime = 1.5f;
     public float maxSpawnTime = 4f;
@@ -271,15 +269,11 @@ public class GameController : MonoBehaviour {
         if (control == null) {
             DontDestroyOnLoad(gameObject);
             control = this;
-        }
-        else if (control != this) {
+        } else if (control != this) {
             Destroy(gameObject);
             return;
         }
         Text text = canvas.GetComponent<Text>();
-        //text.fontStyle = myGUIText.fontStyle;
-        //text.fontSize = myGUIText.fontSize;
-
         //fill screen with gui texture
         guiTexture.pixelInset = new Rect(0, 0, Screen.width, Screen.height);
         myGUIText = this.GetComponent<GUIText>();
@@ -373,9 +367,6 @@ public class GameController : MonoBehaviour {
         } else if (!gameOver) {
             // lives - top left
             //GUI.DrawTexture(new Rect(30f, 15f, 110f, 22f), guiLives[lives]);
-
-            //score - top right
-            myGUIText.text = "SCORE: " + score.ToString();
 
             /*// layer - bottom left
             float boxHeight = 26f;
