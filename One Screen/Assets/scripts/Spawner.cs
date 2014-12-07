@@ -25,7 +25,7 @@ public class Spawner : MonoBehaviour {
 	// Update is called once per frame
 	void Update () {
 	    // pick object to spawn
-        if (canSpawn) {
+        if (canSpawn && !GameController.control.gameOver) {
             GameObject block = (GameObject)Instantiate(spawnQueue[0]);
             Vector2 spawn = GameController.control.open[(int)Random.Range(0,GameController.control.open.Count)];
             block.GetComponent<Block>().x = (int)spawn.x;
