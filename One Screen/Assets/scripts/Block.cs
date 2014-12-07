@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 public class Block : MonoBehaviour {
 
@@ -8,11 +9,8 @@ public class Block : MonoBehaviour {
     public int y = 0;
     public int dir = 0;
 
-    public float width = 25;
-    public float height = 10;
-    //gridWidth
     // this moves the block to the correct location if applicable
-    public void refresh(int [,] grid) {
+    /*public void refresh(int [,] grid) {
         grid[x, y] = -1;
         switch(dir){
             case 0:
@@ -37,12 +35,12 @@ public class Block : MonoBehaviour {
                 break;
         }
         grid[x, y] = color;
-    }
+    }*/
 
 
 	// Use this for initialization
 	void Start () {
-        color = (int)Random.Range(0,5);
+        color = (int)Random.Range(0,4);
 
         switch (color){
             case 0:
@@ -67,11 +65,93 @@ public class Block : MonoBehaviour {
 
         }
 	}
-	
+
+    public List<GameObject> checkColors(List<GameObject> found, int entry = -1) {
+        if(found.Contains(this.gameObject)){
+            return new List<GameObject>();
+        } else {
+            found.Add(this.gameObject);
+        }
+        Block left = null;
+        Block right = null;
+        Block top = null;
+        Block bottom = null;
+        if (x > 0 && GameController.control.blockGrid[x - 1, y] != null && GameController.control.blockGrid[x - 1, y].GetComponent<Block>().color == this.color) {
+            found.Add(GameController.control.blockGrid[x - 1, y]);
+            found.AddRange(GameController.control.blockGrid[x - 1, y].GetComponent<Block>().checkColors(found));
+        }
+        if (x < GameController.control.gridWidth - 1 && GameController.control.blockGrid[x + 1, y] != null && GameController.control.blockGrid[x + 1, y].GetComponent<Block>().color == this.color) {
+            found.Add(GameController.control.blockGrid[x + 1, y]);
+            found.AddRange(GameController.control.blockGrid[x + 1, y].GetComponent<Block>().checkColors(found));
+        }
+        if (y > 0 && GameController.control.blockGrid[x, y - 1] != null && GameController.control.blockGrid[x, y - 1].GetComponent<Block>().color == this.color) {
+            found.Add(GameController.control.blockGrid[x, y - 1]);
+            found.AddRange(GameController.control.blockGrid[x, y - 1].GetComponent<Block>().checkColors(found));
+        }
+        if (y < GameController.control.gridHeight - 1 && GameController.control.blockGrid[x, y + 1] != null && GameController.control.blockGrid[x, y + 1].GetComponent<Block>().color == this.color) {
+            found.Add(GameController.control.blockGrid[x, y + 1]);
+            found.AddRange(GameController.control.blockGrid[x, y + 1].GetComponent<Block>().checkColors(found));
+        }
+        return found;
+
+        /*switch (entry) {
+            case -1: //check all sides
+                if (left && !found.Contains(left))
+                    found.AddRange(left.checkColors(1));
+                if (right)
+                    found.AddRange(right.checkColors(3));
+                if (top)
+                    found.AddRange(top.checkColors(2));
+                if (bottom)
+                    found.AddRange(bottom.checkColors(0));
+
+                break;
+            case 0: // check left right and bottom
+                if (left)
+                    found.AddRange(left.checkColors(1));
+                if (right)
+                    found.AddRange(right.checkColors(3));
+                if (bottom)
+                    found.AddRange(bottom.checkColors(0));
+                break;
+            case 1: //top bottom left
+                if (left)
+                    found.AddRange(left.checkColors(1));
+                if (top)
+                    found.AddRange(top.checkColors(2));
+                if (bottom)
+                    found.AddRange(bottom.checkColors(0));
+                break;
+            case 2: // left right top
+                if (left)
+                    found.AddRange(left.checkColors(1));
+                if (right)
+                    found.AddRange(right.checkColors(3));
+                if (top)
+                    found.AddRange(top.checkColors(2));
+                break;
+            case 3: // top bottom right
+                if (right)
+                    found.AddRange(right.checkColors(3));
+                if (top)
+                    found.AddRange(top.checkColors(2));
+                if (bottom)
+                    found.AddRange(bottom.checkColors(0));
+                break;
+        }*/
+        //return found;
+    }
+
 	// Update is called once per frame
 	void Update () {
-        print((float)Screen.width / GameController.control.gridWidth);
-        print(Screen.width);
         this.transform.position = new Vector2(x + .5f , y + .5f);
 	}
+
+    /*void FixedUpdate() {
+        // check for similar colors
+        List<Block> attached = checkColors();
+        for( int i = 0; i < attached.Count; i ++){
+            //destory and add to points
+        }
+    }*/
 }
