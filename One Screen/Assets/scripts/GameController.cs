@@ -1,20 +1,15 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEngine.UI;
 
 public class GameController : MonoBehaviour {
-
     public static GameController control = null;
     public List<GameObject> blocks = new List<GameObject>(); // keep list to broadcast to
     public int[,] grid;
     public GameObject[,] blockGrid;
+    public Canvas canvas;
     
-
-    //public GameObject player;
-    //PlayerController pc;
-
-    //public GameObject core;
-    //public int playerLayer = 8;
     public Texture2D[] guiLives;
     public Texture2D[] guiLevel;
 
@@ -42,33 +37,30 @@ public class GameController : MonoBehaviour {
     public float multiplyer = 1.0f;
     public int gridWidth = 10;
     public int gridHeight = 10;
+    int blockScore = 250;
 
     //long threshold = 7500;
 
     //public bool[] underAttack;
 
-    //public float minSpawnTime = 1.5f;
-    //public float maxSpawnTime = 4f;
+    public float minSpawnTime = 1.5f;
+    public float maxSpawnTime = 4f;
     //public float powerupChance = .20f;
 
     public int gravityDirection = 0; //0 is up clockwise to 3, 2 is down
 
-    /*IEnumerator IncreaseMultiplyer(float delay) {
+    IEnumerator IncreaseMultiplyer(float delay) {
         yield return new WaitForSeconds(delay);
         multiplyer += 0.5f + 0.05f * delay;
         minSpawnTime = Mathf.Clamp(minSpawnTime -0.1f, 0.1f, 1f);
         maxSpawnTime = Mathf.Clamp(maxSpawnTime - 0.2f, 1.5f, 3f);
         //powerupChance = Mathf.Clamp(powerupChance + 0.01f, 0.20f, 0.33f);
         StartCoroutine(IncreaseMultiplyer(0.04f * delay * delay + 1f + delay));
-    }*/
+    }
 
     IEnumerator MoveBlocks(float delay) {      
         UpdateBlocks();
         yield return new WaitForSeconds(delay);
-        /*for (int i = 0; i < blocks.Count; i++) {
-            blocks[i].dir = gravityDirection; // TEST TODO
-            blocks[i].refresh(grid);
-        }*/
         StartCoroutine(MoveBlocks(delay));
     }
 
@@ -90,11 +82,7 @@ public class GameController : MonoBehaviour {
         }
     }
 
-    public static Vector3 RotatePointAroundPivot(Vector3 point, Vector3 pivot, Quaternion angle) {
-        return angle * (point - pivot) + pivot;
-    }
-
-    IEnumerator flipScreen(float time, float direction) {
+    /*IEnumerator flipScreen(float time, float direction) {
         reversed = !reversed;
         int steps = 60;
         if (direction == 180f) {
@@ -119,7 +107,7 @@ public class GameController : MonoBehaviour {
             //gameCamera.transform.Rotate(gameCamera.transform.right, direction / steps);
             yield return new WaitForSeconds(time / steps);
         }
-    }
+    } TODO */
 
     public void UpdateBlocks() {
         if( gravityDirection == 0 || gravityDirection == 3) {
@@ -128,19 +116,8 @@ public class GameController : MonoBehaviour {
                     if (blockGrid[i, k] != null) {
                         List<GameObject> b = new List<GameObject>();
                         b = blockGrid[i, k].GetComponent<Block>().checkColors(b);
-                        print(b.Count);
                         if (b.Count >= 3) {
-                            print("COMBO!");
-                            print(b);
-                            for (int j = 0; j < b.Count; j++) {
-                                print(j);
-                                print(b[j]);
-                                print(b[j].GetComponent<Block>().x + " " + b[j].GetComponent<Block>().y);
-                                Destroy(blockGrid[b[j].GetComponent<Block>().x, b[j].GetComponent<Block>().y]);
-                                blockGrid[b[j].GetComponent<Block>().x, b[j].GetComponent<Block>().y] = null;
-                                Destroy(b[j]);
-                                //destory and add to points
-                            }
+                            destroyBlocks(b);
                         }
                         if (blockGrid[i, k] == null)
                             continue;
@@ -171,19 +148,8 @@ public class GameController : MonoBehaviour {
                         if (blockGrid[i, k] != null) {
                             List<GameObject> b = new List<GameObject>();
                             b = blockGrid[i, k].GetComponent<Block>().checkColors(b);
-                            print(b.Count);
                             if (b.Count >= 3) {
-                                print("COMBO!");
-                                print(b);
-                                for (int j = 0; j < b.Count; j++) {
-                                    print(j);
-                                    print(b[j]);
-                                    print(b[j].GetComponent<Block>().x + " " + b[j].GetComponent<Block>().y);
-                                    Destroy(blockGrid[b[j].GetComponent<Block>().x, b[j].GetComponent<Block>().y]);
-                                    blockGrid[b[j].GetComponent<Block>().x, b[j].GetComponent<Block>().y] = null;
-                                    Destroy(b[j]);
-                                    //destory and add to points
-                                }
+                                destroyBlocks(b);
                             }
                             if (blockGrid[i, k] == null)
                                 continue;
@@ -209,6 +175,17 @@ public class GameController : MonoBehaviour {
                     }
                 }
             }
+    }
+
+    void destroyBlocks(List<GameObject> b) {
+        for (int j = 0; j < b.Count; j++) {
+            Destroy(blockGrid[b[j].GetComponent<Block>().x, b[j].GetComponent<Block>().y]);
+            //Destroy(b[j]);
+            score += (int)Mathf.Pow(j, 2f) / 2 * blockScore;
+            //blockGrid[b[j].GetComponent<Block>().x, b[j].GetComponent<Block>().y] = null;
+            //Destroy(b[j]);
+            //destory and add to points
+        }
     }
 
     void Push() {
@@ -299,28 +276,21 @@ public class GameController : MonoBehaviour {
             Destroy(gameObject);
             return;
         }
+        Text text = canvas.GetComponent<Text>();
+        //text.fontStyle = myGUIText.fontStyle;
+        //text.fontSize = myGUIText.fontSize;
 
         //fill screen with gui texture
         guiTexture.pixelInset = new Rect(0, 0, Screen.width, Screen.height);
         myGUIText = this.GetComponent<GUIText>();
         myGUIText.pixelOffset = new Vector2(Screen.width - 30f, Screen.height - 15f);
-        myGUIStyle = new GUIStyle();
-        myGUIStyle.fontStyle = myGUIText.fontStyle;
-        myGUIStyle.fontSize = myGUIText.fontSize;
-        myGUIStyle.font = myGUIText.font;
-        myGUIStyle.normal.textColor = Color.white;
-        //pc = player.GetComponent<PlayerController>();
-        //underAttack = new bool[2];
-        //for (int i = 0; i < underAttack.Length; i++) {
-        //    underAttack[i] = false;
-        //}
+        //myGUIStyle = new GUIStyle();*/
+        text.fontStyle = myGUIText.fontStyle;
+        text.fontSize = myGUIText.fontSize;
+        text.font = myGUIText.font;
+        text.color = Color.white;
+
         //init grid
-        /*grid = new int[gridWidth, gridHeight];
-        for (int i = 0; i < gridWidth; i++) {
-            for (int k = 0; k < gridHeight; k++) {
-                grid[i, k] = -1;
-            }
-        }*/
         blockGrid = new GameObject[gridWidth, gridHeight];
         for (int i = 0; i < gridWidth; i++) {
             for (int k = 0; k < gridHeight; k++) {
@@ -369,16 +339,16 @@ public class GameController : MonoBehaviour {
 	}
 
     void FixedUpdate() {
+        canvas.GetComponent<Text>().text = "SCORE:\n" + score.ToString();
         open.Clear();
         //CheckScore();
         //playerLayer = player.layer;
+
         // Check for endgame condition
         for (int i = 0; i < gridWidth; i++) {
             for (int k = 0; k < gridHeight; k++) {
                 if (blockGrid[i, k] == null) {
                     open.Add(new Vector2(i, k));
-                } else {
-                    
                 }
             }
         }
@@ -402,12 +372,12 @@ public class GameController : MonoBehaviour {
                 paused = togglePause();
         } else if (!gameOver) {
             // lives - top left
-            /*GUI.DrawTexture(new Rect(30f, 15f, 110f, 22f), guiLives[lives]);
+            //GUI.DrawTexture(new Rect(30f, 15f, 110f, 22f), guiLives[lives]);
 
             //score - top right
             myGUIText.text = "SCORE: " + score.ToString();
 
-            // layer - bottom left
+            /*// layer - bottom left
             float boxHeight = 26f;
             float boxDelim = 3f;
             float boxWidth = 14f;
@@ -419,10 +389,10 @@ public class GameController : MonoBehaviour {
                 else {
                     GUI.DrawTexture(new Rect(30f + i * (boxWidth + boxDelim), Screen.height - 30f - boxHeight, boxWidth, boxHeight), guiLevel[1]);
                 }
-            }
+            }*/
 
             //bombs
-            GUI.Label(new Rect(Screen.width - 54f - 33f, Screen.height - 30f - boxHeight + 1f, boxWidth + 10f, boxHeight), "x" + pc.bombs.ToString(), myGUIStyle);
+            /*GUI.Label(new Rect(Screen.width - 54f - 33f, Screen.height - 30f - boxHeight + 1f, boxWidth + 10f, boxHeight), "x" + pc.bombs.ToString(), myGUIStyle);
             GUI.DrawTexture(new Rect(Screen.width - 54f, Screen.height - 30f - boxHeight, boxWidth + 10f, boxHeight), bombTex);*/
         } else {
             myGUIText.text = "SCORE: " + score.ToString();
@@ -469,7 +439,6 @@ public class GameController : MonoBehaviour {
             sceneStarting = false;
         }
     }
-
 
     public void EndScene() {
         // Make sure the texture is enabled.
