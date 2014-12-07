@@ -44,22 +44,26 @@ public class Block : MonoBehaviour {
 
         switch (color){
             case 0:
-                this.renderer.material.color = Color.green;
+                this.renderer.material.color = new Color(.267f, 1f, .278f); // 68 255 71
+                //this.renderer.material.color = Color.green;
                 break;
             case 1:
-                this.renderer.material.color = Color.blue;
+                this.renderer.material.color = new Color(.29f, .835f, 1f); // 74 213 254
+                //this.renderer.material.color = Color.blue;
                 break;
             case 2:
-                this.renderer.material.color = Color.yellow;
+                this.renderer.material.color = new Color(.941f, 1f, .373f); // 240 255 95
+                //this.renderer.material.color = Color.yellow;
                 break;
             case 3:
-                this.renderer.material.color = Color.red;
+                this.renderer.material.color = new Color(.99f, .30f, .251f); //253 77 66
+                //this.renderer.material.color = Color.red;
                 break;
             case 4:
-                this.renderer.material.color = Color.white;
+                //this.renderer.material.color = Color.white;
                 break;
             case 5:
-                this.renderer.material.color = Color.white;
+                //this.renderer.material.color = Color.white;
                 break;
 
 
@@ -72,10 +76,6 @@ public class Block : MonoBehaviour {
         } else {
             found.Add(this.gameObject);
         }
-        Block left = null;
-        Block right = null;
-        Block top = null;
-        Block bottom = null;
         if (x > 0 && GameController.control.blockGrid[x - 1, y] != null && GameController.control.blockGrid[x - 1, y].GetComponent<Block>().color == this.color) {
             found.Add(GameController.control.blockGrid[x - 1, y]);
             found.AddRange(GameController.control.blockGrid[x - 1, y].GetComponent<Block>().checkColors(found));
@@ -93,53 +93,6 @@ public class Block : MonoBehaviour {
             found.AddRange(GameController.control.blockGrid[x, y + 1].GetComponent<Block>().checkColors(found));
         }
         return found;
-
-        /*switch (entry) {
-            case -1: //check all sides
-                if (left && !found.Contains(left))
-                    found.AddRange(left.checkColors(1));
-                if (right)
-                    found.AddRange(right.checkColors(3));
-                if (top)
-                    found.AddRange(top.checkColors(2));
-                if (bottom)
-                    found.AddRange(bottom.checkColors(0));
-
-                break;
-            case 0: // check left right and bottom
-                if (left)
-                    found.AddRange(left.checkColors(1));
-                if (right)
-                    found.AddRange(right.checkColors(3));
-                if (bottom)
-                    found.AddRange(bottom.checkColors(0));
-                break;
-            case 1: //top bottom left
-                if (left)
-                    found.AddRange(left.checkColors(1));
-                if (top)
-                    found.AddRange(top.checkColors(2));
-                if (bottom)
-                    found.AddRange(bottom.checkColors(0));
-                break;
-            case 2: // left right top
-                if (left)
-                    found.AddRange(left.checkColors(1));
-                if (right)
-                    found.AddRange(right.checkColors(3));
-                if (top)
-                    found.AddRange(top.checkColors(2));
-                break;
-            case 3: // top bottom right
-                if (right)
-                    found.AddRange(right.checkColors(3));
-                if (top)
-                    found.AddRange(top.checkColors(2));
-                if (bottom)
-                    found.AddRange(bottom.checkColors(0));
-                break;
-        }*/
-        //return found;
     }
 
 	// Update is called once per frame

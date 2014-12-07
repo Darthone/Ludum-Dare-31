@@ -1,9 +1,9 @@
 fileFormatVersion: 2
-guid: bec6b05fb94dbd045b171e96f6d5574f
+guid: c600211ed03432543aa193c214b700df
 TextureImporter:
   fileIDToRecycleName:
-    21300000: whiteBlockborder
-    21300002: whiteBlock
+    21300000: whiteBlock
+    21300002: whiteBlockold
   serializedVersion: 2
   mipmaps:
     mipMapMode: 0
