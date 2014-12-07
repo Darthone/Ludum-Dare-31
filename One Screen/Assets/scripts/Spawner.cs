@@ -13,12 +13,12 @@ public class Spawner : MonoBehaviour {
     IEnumerator delaySpawn(float delay) {
         yield return new WaitForSeconds(delay + 1f);
         canSpawn = true;
-        //updateSpawner();
+        updateSpawner();
     }
 
 	// Use this for initialization
 	void Start () {
-        //updateSpawner();
+        updateSpawner();
         StartCoroutine(delaySpawn(Random.Range(minSpawnTime, maxSpawnTime)));
 	}
 	
@@ -28,10 +28,8 @@ public class Spawner : MonoBehaviour {
         if (canSpawn) {
             GameObject block = (GameObject)Instantiate(spawnQueue[0]);
             Vector2 spawn = GameController.control.open[(int)Random.Range(0,GameController.control.open.Count)];
-            Block thisB = block.GetComponent<Block>();
-            //thisB.grid = 
-            thisB.x = (int)spawn.x;
-            thisB.y = (int)spawn.y;
+            block.GetComponent<Block>().x = (int)spawn.x;
+            block.GetComponent<Block>().y = (int)spawn.y;
             GameController.control.blockGrid[(int)spawn.x, (int)spawn.y] = block;
             //GameController.control.blocks.Add(thisB);
             canSpawn = false;
@@ -51,15 +49,13 @@ public class Spawner : MonoBehaviour {
                 enemy.layer = spawnLayer;
 
                 // spawn enemy
-            }
-            canSpawn = false;
-            StartCoroutine(delaySpawn(Random.Range(minSpawnTime, maxSpawnTime)));*/
+            }*/
         }
 	}
 
-    /*void updateSpawner() {
+   void updateSpawner() {
         minSpawnTime = GameController.control.minSpawnTime;
         maxSpawnTime = GameController.control.maxSpawnTime;
-        powerupChance = GameController.control.powerupChance;
-    }*/
+        //powerupChance = GameController.control.powerupChance;
+    }
 }
