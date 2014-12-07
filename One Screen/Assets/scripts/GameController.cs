@@ -5,8 +5,9 @@ using System.Collections.Generic;
 public class GameController : MonoBehaviour {
 
     public static GameController control = null;
-    public List<Block> blocks = new List<Block>(); // keep list to broadcast to
-    int[,] grid;
+    public List<GameObject> blocks = new List<GameObject>(); // keep list to broadcast to
+    public int[,] grid;
+    public GameObject[,] blockGrid;
     
 
     //public GameObject player;
@@ -20,7 +21,7 @@ public class GameController : MonoBehaviour {
     public Texture2D bombTex;
     public GameObject floatingText;
     public Camera gameCamera;
-
+    public List<Vector2> open = new List<Vector2>();
     GUIText myGUIText;
     GUIStyle myGUIStyle;
     //public Texture2D[] guiLives;
@@ -32,13 +33,14 @@ public class GameController : MonoBehaviour {
     private bool sceneStarting = true;      // Whether or not the scene is still fading in.
     public bool sceneEnding = false;
     public bool gameOver = false;
+    public bool reversed = false;
 
 	//public AudioClip newWorldAvailableSound;
     //public AudioClip gameoverSound;
 
     public long score = 0;
     public float multiplyer = 1.0f;
-    public int gridWidth = 15;
+    public int gridWidth = 10;
     public int gridHeight = 10;
 
     //long threshold = 7500;
@@ -49,7 +51,7 @@ public class GameController : MonoBehaviour {
     //public float maxSpawnTime = 4f;
     //public float powerupChance = .20f;
 
-    public int gravityDirection = 2; //0 is up clockwise to 3, 2 is down
+    public int gravityDirection = 0; //0 is up clockwise to 3, 2 is down
 
     /*IEnumerator IncreaseMultiplyer(float delay) {
         yield return new WaitForSeconds(delay);
@@ -60,18 +62,18 @@ public class GameController : MonoBehaviour {
         StartCoroutine(IncreaseMultiplyer(0.04f * delay * delay + 1f + delay));
     }*/
 
-    IEnumerator MoveBlocks(float delay) {
+    IEnumerator MoveBlocks(float delay) {      
+        UpdateBlocks();
         yield return new WaitForSeconds(delay);
-        print("blocks moved");
-        for (int i = 0; i < blocks.Count; i++) {
+        /*for (int i = 0; i < blocks.Count; i++) {
             blocks[i].dir = gravityDirection; // TEST TODO
             blocks[i].refresh(grid);
-        }
+        }*/
         StartCoroutine(MoveBlocks(delay));
     }
 
     IEnumerator rotateScreen(float time, float direction) {
-        int steps = 60;
+        int steps = 30;
         if (direction == 90f) {
             gravityDirection++;
         } else if (direction == -90f) {
@@ -83,17 +85,187 @@ public class GameController : MonoBehaviour {
             gravityDirection = 3;
 
         for (int i = 0; i < steps; i++) {
-            print("stepping");
             gameCamera.transform.Rotate(gameCamera.transform.forward, direction / steps);
             yield return new WaitForSeconds(time / steps);
         }
     }
 
-    public void UpdateBlocks() {
-        for (int i = 0; i < blocks.Count; i++) {
-            blocks[i].dir = gravityDirection; // TEST TODO
-            blocks[i].refresh(grid);
+    public static Vector3 RotatePointAroundPivot(Vector3 point, Vector3 pivot, Quaternion angle) {
+        return angle * (point - pivot) + pivot;
+    }
+
+    IEnumerator flipScreen(float time, float direction) {
+        reversed = !reversed;
+        int steps = 60;
+        if (direction == 180f) {
+            gravityDirection += 2;
+        } else if (direction == -180f) {
+            gravityDirection += 2;
         }
+
+        if (gravityDirection > 3)
+            gravityDirection -= 3;
+            //gravityDirection = 0;
+        if (gravityDirection < 0)
+            gravityDirection += 3;
+            //gravityDirection = 3;
+
+        for (int i = 0; i < steps; i++) {
+            print("fucking  translating");
+            //gameCamera.transform.LookAt(new Vector3(10, 10, 0), gameCamera.transform.up);
+            print(steps / direction);
+            gameCamera.transform.position = Vector3.Slerp(new Vector3(10, 10, 10), new Vector3(10, 10, -10), (direction / steps));
+            //gameCamera.transform.Translate(gameCamera.transform.up * ((direction / steps)/100));
+            //gameCamera.transform.Rotate(gameCamera.transform.right, direction / steps);
+            yield return new WaitForSeconds(time / steps);
+        }
+    }
+
+    public void UpdateBlocks() {
+        if( gravityDirection == 0 || gravityDirection == 3) {
+            for (int i = 0; i < gridWidth; i++) {
+                for (int k = 0; k < gridHeight; k++) {
+                    if (blockGrid[i, k] != null) {
+                        List<GameObject> b = new List<GameObject>();
+                        b = blockGrid[i, k].GetComponent<Block>().checkColors(b);
+                        print(b.Count);
+                        if (b.Count >= 3) {
+                            print("COMBO!");
+                            print(b);
+                            for (int j = 0; j < b.Count; j++) {
+                                print(j);
+                                print(b[j]);
+                                print(b[j].GetComponent<Block>().x + " " + b[j].GetComponent<Block>().y);
+                                Destroy(blockGrid[b[j].GetComponent<Block>().x, b[j].GetComponent<Block>().y]);
+                                blockGrid[b[j].GetComponent<Block>().x, b[j].GetComponent<Block>().y] = null;
+                                Destroy(b[j]);
+                                //destory and add to points
+                            }
+                        }
+                        if (blockGrid[i, k] == null)
+                            continue;
+                        switch (gravityDirection) {
+                            case 0:
+                                if (k - 1 >= 0 && blockGrid[i, k - 1] == null) {
+                                    blockGrid[i, k].GetComponent<Block>().x = i;
+                                    blockGrid[i, k].GetComponent<Block>().y = k - 1;
+                                    blockGrid[i, k - 1] = blockGrid[i, k];
+                                    blockGrid[i, k] = null;
+                                }
+                                break;
+                            case 3:
+                                if (i - 1 >= 0 && blockGrid[i - 1, k] == null) {
+                                    blockGrid[i, k].GetComponent<Block>().x = i - 1;
+                                    blockGrid[i, k].GetComponent<Block>().y = k;
+                                    blockGrid[i - 1, k] = blockGrid[i, k];
+                                    blockGrid[i, k] = null;
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+            } else {
+                for (int i = gridWidth - 1; i >= 0; i--) {
+                    for (int k = gridHeight - 1; k >= 0; k--) {
+                        if (blockGrid[i, k] != null) {
+                            List<GameObject> b = new List<GameObject>();
+                            b = blockGrid[i, k].GetComponent<Block>().checkColors(b);
+                            print(b.Count);
+                            if (b.Count >= 3) {
+                                print("COMBO!");
+                                print(b);
+                                for (int j = 0; j < b.Count; j++) {
+                                    print(j);
+                                    print(b[j]);
+                                    print(b[j].GetComponent<Block>().x + " " + b[j].GetComponent<Block>().y);
+                                    Destroy(blockGrid[b[j].GetComponent<Block>().x, b[j].GetComponent<Block>().y]);
+                                    blockGrid[b[j].GetComponent<Block>().x, b[j].GetComponent<Block>().y] = null;
+                                    Destroy(b[j]);
+                                    //destory and add to points
+                                }
+                            }
+                            if (blockGrid[i, k] == null)
+                                continue;
+                            switch (gravityDirection) {
+                                case 1:
+                                    if (i + 1 < gridWidth && blockGrid[i + 1, k] == null) {
+                                        blockGrid[i, k].GetComponent<Block>().x = i + 1;
+                                        blockGrid[i, k].GetComponent<Block>().y = k;
+                                        blockGrid[i + 1, k] = blockGrid[i, k];
+                                        blockGrid[i, k] = null;
+                                    }
+                                    break;
+                                case 2:
+                                    if (k + 1 < gridHeight && blockGrid[i, k + 1] == null) {
+                                        blockGrid[i, k].GetComponent<Block>().x = i;
+                                        blockGrid[i, k].GetComponent<Block>().y = k + 1;
+                                        blockGrid[i, k + 1] = blockGrid[i, k];
+                                        blockGrid[i, k] = null;
+                                    }
+                                    break;
+                            }
+                        }
+                    }
+                }
+            }
+    }
+
+    void Push() {
+        if (gravityDirection == 1 || gravityDirection == 2) {
+            for (int i = 0; i < gridWidth; i++) {
+                for (int k = 0; k < gridHeight; k++) {
+                    if (blockGrid[i, k] != null) {
+                        switch (gravityDirection) {
+                            case 1:
+                                if (i + 1 < gridWidth && blockGrid[i + 1, k] == null) {
+                                    blockGrid[i, k].GetComponent<Block>().x = i + 1;
+                                    blockGrid[i, k].GetComponent<Block>().y = k;
+                                    blockGrid[i + 1, k] = blockGrid[i, k];
+                                    blockGrid[i, k] = null;
+                                }
+                                break;
+                            case 2:
+                                if (k + 1 < gridHeight && blockGrid[i, k + 1] == null) {
+                                    blockGrid[i, k].GetComponent<Block>().x = i;
+                                    blockGrid[i, k].GetComponent<Block>().y = k + 1;
+                                    blockGrid[i, k + 1] = blockGrid[i, k];
+                                    blockGrid[i, k] = null;
+                                }
+                                break;
+                            
+                        }
+                    }
+                }
+            }
+        }
+        else {
+            for (int i = gridWidth - 1; i >= 0; i--) {
+                for (int k = gridHeight - 1; k >= 0; k--) {
+                    if (blockGrid[i, k] != null) {
+                        switch (gravityDirection) {
+                            case 0:
+                                if (k - 1 >= 0 && blockGrid[i, k - 1] == null) {
+                                    blockGrid[i, k].GetComponent<Block>().x = i;
+                                    blockGrid[i, k].GetComponent<Block>().y = k - 1;
+                                    blockGrid[i, k - 1] = blockGrid[i, k];
+                                    blockGrid[i, k] = null;
+                                }
+                                break;
+                            case 3:
+                                if (i - 1 >= 0 && blockGrid[i - 1, k] == null) {
+                                    blockGrid[i, k].GetComponent<Block>().x = i - 1;
+                                    blockGrid[i, k].GetComponent<Block>().y = k;
+                                    blockGrid[i - 1, k] = blockGrid[i, k];
+                                    blockGrid[i, k] = null;
+                                }
+                                break;
+                        }
+                    }
+                }
+            }
+        }
+
     }
 
     public IEnumerator Shake(float duration, float magnitude) {
@@ -143,10 +315,16 @@ public class GameController : MonoBehaviour {
         //    underAttack[i] = false;
         //}
         //init grid
-        grid = new int[gridWidth, gridHeight];
+        /*grid = new int[gridWidth, gridHeight];
         for (int i = 0; i < gridWidth; i++) {
             for (int k = 0; k < gridHeight; k++) {
                 grid[i, k] = -1;
+            }
+        }*/
+        blockGrid = new GameObject[gridWidth, gridHeight];
+        for (int i = 0; i < gridWidth; i++) {
+            for (int k = 0; k < gridHeight; k++) {
+                blockGrid[i, k] = null;
             }
         }
         StartCoroutine(MoveBlocks(1f));
@@ -171,14 +349,44 @@ public class GameController : MonoBehaviour {
         }
 
         if (Input.GetButtonDown("Right")){
-            print("rotated right");
-            StartCoroutine(rotateScreen(0.5f, 90));
+            StartCoroutine(rotateScreen(0.1f, 90));
         }
+        if (Input.GetButtonDown("Left")) {
+            StartCoroutine(rotateScreen(0.1f, -90));
+        }
+
+        if (Input.GetButtonDown("Push")) {
+            Push();
+        }
+
+        /*
+        if (Input.GetButtonDown("FlipUp")) {
+            StartCoroutine(flipScreen(0.1f, 180));
+        }
+        if (Input.GetButtonDown("FlipDown")) {
+            StartCoroutine(flipScreen(0.1f, -180));
+        }*/
 	}
 
     void FixedUpdate() {
+        open.Clear();
         //CheckScore();
         //playerLayer = player.layer;
+        // Check for endgame condition
+        for (int i = 0; i < gridWidth; i++) {
+            for (int k = 0; k < gridHeight; k++) {
+                if (blockGrid[i, k] == null) {
+                    open.Add(new Vector2(i, k));
+                } else {
+                    
+                }
+            }
+        }
+        if (open.Count == 0) {
+            gameOver = true;
+            print("GAME OVER");
+            //game over
+        }
 
         if (sceneStarting)
             StartScene();
@@ -243,12 +451,10 @@ public class GameController : MonoBehaviour {
         guiTexture.color = Color.Lerp(guiTexture.color, Color.clear, fadeSpeed * Time.deltaTime);
     }
 
-
     void FadeToBlack() {
         // Lerp the colour of the texture between itself and black.
         guiTexture.color = Color.Lerp(guiTexture.color, Color.black, fadeSpeed * Time.deltaTime);
     }
-
 
     void StartScene() {
         // Fade the texture to clear.

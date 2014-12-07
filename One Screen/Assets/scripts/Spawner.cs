@@ -2,8 +2,8 @@
 using System.Collections;
 
 public class Spawner : MonoBehaviour {
-    public GameObject[] enemiesToSpawn;
-    public GameObject[] powerupsToSpawn;
+    public GameObject[] spawnQueue;
+    //public GameObject[] powerupsToSpawn;
     float minSpawnTime = 1f;
     float maxSpawnTime = 3f;
     bool canSpawn = false;
@@ -26,6 +26,17 @@ public class Spawner : MonoBehaviour {
 	void Update () {
 	    // pick object to spawn
         if (canSpawn) {
+            GameObject block = (GameObject)Instantiate(spawnQueue[0]);
+            Vector2 spawn = GameController.control.open[(int)Random.Range(0,GameController.control.open.Count)];
+            Block thisB = block.GetComponent<Block>();
+            //thisB.grid = 
+            thisB.x = (int)spawn.x;
+            thisB.y = (int)spawn.y;
+            GameController.control.blockGrid[(int)spawn.x, (int)spawn.y] = block;
+            //GameController.control.blocks.Add(thisB);
+            canSpawn = false;
+            StartCoroutine(delaySpawn(Random.Range(minSpawnTime, maxSpawnTime)));
+
             /*int spawnLayer = (int)Random.Range(8, 9 + GameController.control.level);
             if (Random.value < powerupChance) {
                 GameObject powerup = (GameObject)Instantiate(powerupsToSpawn[(int)Mathf.Round(Random.Range(0, enemiesToSpawn.Length - 1))],
