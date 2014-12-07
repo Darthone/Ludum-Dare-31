@@ -35,6 +35,7 @@ public class GameController : MonoBehaviour {
 
     public long score = 0;
     public float multiplyer = 1.0f;
+    public float refresh = 1.0f;
     public int gridWidth = 16;
     public int gridHeight = 16;
     int blockScore = 250;
@@ -59,7 +60,8 @@ public class GameController : MonoBehaviour {
     IEnumerator MoveBlocks(float delay) {      
         UpdateBlocks();
         yield return new WaitForSeconds(delay);
-        StartCoroutine(MoveBlocks(delay));
+        refresh = Mathf.Clamp(refresh - .01f, 0.15f, 1f);
+        StartCoroutine(MoveBlocks(refresh));
     }
 
     IEnumerator rotateScreen(float time, float direction) {
@@ -291,6 +293,7 @@ public class GameController : MonoBehaviour {
                 blockGrid[i, k] = null;
             }
         }
+        StartCoroutine(IncreaseMultiplyer(2f));
         StartCoroutine(MoveBlocks(1f));
     }
 	
