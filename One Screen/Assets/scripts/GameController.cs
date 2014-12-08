@@ -16,6 +16,10 @@ public class GameController : MonoBehaviour {
     GUIText myGUIText;
     GUIStyle myGUIStyle;
 
+    public AudioClip twist;
+    public AudioClip push;
+    public AudioClip explode;
+
     bool paused = false;
     public bool canPause = true;
 
@@ -27,7 +31,7 @@ public class GameController : MonoBehaviour {
     bool rotating = false;
     string Rules = "\n-------Rules------- \nMatch 4\n\n Left  \n\nRight  \n\n Space\n\n\n\nLD48: 31\nOne Screen\n\nDarioMarasco\n\nPolybox\n Games\n2014";
     bool playing = false;
-
+    bool playedExplode = false;
     //public string Rules = "\n0x21B5";
 	//public AudioClip newWorldAvailableSound;
     //public AudioClip gameoverSound;
@@ -84,6 +88,7 @@ public class GameController : MonoBehaviour {
     }
 
     IEnumerator rotateScreen(float time, int direction) {
+        AudioSource.PlayClipAtPoint(twist, new Vector3(5f, 5f, -100f), 1f);
         int steps = 15;
         if (direction == 90) {
             gravityDirection++;
@@ -94,8 +99,6 @@ public class GameController : MonoBehaviour {
             gravityDirection = 0;
         if (gravityDirection < 0)
             gravityDirection = 3;
-
-        
 
         for (int i = 0; i < steps; i++) {
             gameCamera.transform.Rotate(gameCamera.transform.forward, direction / (float)steps);
@@ -181,7 +184,10 @@ public class GameController : MonoBehaviour {
             if (!b.Contains(a[i]))
                 b.Add(a[i]);
         }
-
+        if (!playedExplode) {
+            AudioSource.PlayClipAtPoint(explode, new Vector3(5f, 5f, -100f), .45f);
+            playedExplode = true;
+        }
         for (int j = 0; j < b.Count; j++) {
             loc = new Vector3(b[j].GetComponent<Block>().x, b[j].GetComponent<Block>().y, -30);
             Destroy(blockGrid[b[j].GetComponent<Block>().x, b[j].GetComponent<Block>().y]);
@@ -196,6 +202,7 @@ public class GameController : MonoBehaviour {
     }
 
     void Push() {
+        AudioSource.PlayClipAtPoint(push, new Vector3(5f, 5f, -100f), .5f);
         if (gravityDirection == 1 || gravityDirection == 2) {
             for (int i = 0; i < gridWidth; i++) {
                 for (int k = 0; k < gridHeight; k++) {
@@ -328,20 +335,22 @@ public class GameController : MonoBehaviour {
         if (Input.GetButtonDown("Mute")){
             AudioListener.pause = !AudioListener.pause;
         }
+        if (!paused) {
+            if (Input.GetButtonDown("Right")) {
+                StartCoroutine(rotateScreen(0.1f, 90));
+            }
+            if (Input.GetButtonDown("Left")) {
+                StartCoroutine(rotateScreen(0.1f, -90));
+            }
 
-        if (Input.GetButtonDown("Right")) {
-            StartCoroutine(rotateScreen(0.1f, 90));
-        }
-        if (Input.GetButtonDown("Left")) {
-            StartCoroutine(rotateScreen(0.1f, -90));
-        }
-
-        if (Input.GetButtonDown("Push")) {
-            Push();
+            if (Input.GetButtonDown("Push")) {
+                Push();
+            }
         }
 	}
 
     void FixedUpdate() {
+        playedExplode = false;
         if(!gameOver)
             canvas.GetComponent<Text>().text = "SCORE:\n" + score.ToString() + "\n\n" + Rules;
         
@@ -372,7 +381,7 @@ public class GameController : MonoBehaviour {
             if (GUILayout.Button("Unpause"))
                 paused = togglePause();
         } else if (!playing) {
-            GUILayout.Label("\n\n\n\n\n\n\n\n\n\n\n\tRead the Rules and then Press Space!", myGUIStyle);
+            GUILayout.Label("\n\n\n\n\n\n\n\n\n\n\n\tRead the Rules and then Press Space!\n\t\tM to Mute", myGUIStyle);
             if (Input.GetButtonDown("Select") || Input.GetButtonDown("Push")) {
                 playing = true;
                 Time.timeScale = 1f;
