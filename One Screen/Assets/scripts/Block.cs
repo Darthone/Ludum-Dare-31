@@ -9,35 +9,6 @@ public class Block : MonoBehaviour {
     public int y = 0;
     public int dir = 0;
 
-    // this moves the block to the correct location if applicable
-    /*public void refresh(int [,] grid) {
-        grid[x, y] = -1;
-        switch(dir){
-            case 0:
-                if (y - 1 >= 0 && grid[x, y - 1] == -1){
-                    y--;
-                }
-                break;
-            case 1:
-                if (x + 1 < GameController.control.gridWidth && grid[x + 1, y] == -1){
-                    x++;
-                }
-                break;
-            case 2:
-                if (y + 1 < GameController.control.gridHeight && grid[x, y + 1] == -1) {
-                    y++;
-                }
-                break;
-            case 3:
-                if (x - 1 >= 0 && grid[x - 1, y] == -1){
-                    x--;
-                }
-                break;
-        }
-        grid[x, y] = color;
-    }*/
-
-
 	// Use this for initialization
 	void Start () {
         color = (int)Random.Range(0,GameController.control.level);
@@ -74,31 +45,30 @@ public class Block : MonoBehaviour {
         }
 	}
 
-    public List<GameObject> checkColors(List<GameObject> found) {
-        //List<GameObject> result = new List<GameObject>();
-        // remove duplicates
-
+    public List<GameObject> checkColors(List<GameObject> found, int from = -1) {
         // look around at other blocks
-        if(found.Contains(this.gameObject)){
+        if (found.Contains(this.gameObject)) {
             return new List<GameObject>();
-        } else {
-            //result.Add(this.gameObject);
+        }
+        else {
             found.Add(this.gameObject);
         }
+        
+     
+        // check left
         if (x > 0 && GameController.control.blockGrid[x - 1, y] != null && GameController.control.blockGrid[x - 1, y].GetComponent<Block>().color == this.color) {
-            //found.Add(GameController.control.blockGrid[x - 1, y]);
             found.AddRange(GameController.control.blockGrid[x - 1, y].GetComponent<Block>().checkColors(found));
         }
+        //check right
         if (x < GameController.control.gridWidth - 1 && GameController.control.blockGrid[x + 1, y] != null && GameController.control.blockGrid[x + 1, y].GetComponent<Block>().color == this.color) {
-            //found.Add(GameController.control.blockGrid[x + 1, y]);
             found.AddRange(GameController.control.blockGrid[x + 1, y].GetComponent<Block>().checkColors(found));
         }
+        //check bottom
         if (y > 0 && GameController.control.blockGrid[x, y - 1] != null && GameController.control.blockGrid[x, y - 1].GetComponent<Block>().color == this.color) {
-            //found.Add(GameController.control.blockGrid[x, y - 1]);
             found.AddRange(GameController.control.blockGrid[x, y - 1].GetComponent<Block>().checkColors(found));
         }
+        //check top
         if (y < GameController.control.gridHeight - 1 && GameController.control.blockGrid[x, y + 1] != null && GameController.control.blockGrid[x, y + 1].GetComponent<Block>().color == this.color) {
-            //found.Add(GameController.control.blockGrid[x, y + 1]);
             found.AddRange(GameController.control.blockGrid[x, y + 1].GetComponent<Block>().checkColors(found));
         }
         return found;
@@ -106,14 +76,7 @@ public class Block : MonoBehaviour {
 
 	// Update is called once per frame
 	void Update () {
+        // draw in correct position on the screen
         this.transform.position = new Vector2(x + .5f , y + .5f);
 	}
-
-    /*void FixedUpdate() {
-        // check for similar colors
-        List<Block> attached = checkColors();
-        for( int i = 0; i < attached.Count; i ++){
-            //destory and add to points
-        }
-    }*/
 }
