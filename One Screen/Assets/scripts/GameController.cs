@@ -5,21 +5,16 @@ using UnityEngine.UI;
 
 public class GameController : MonoBehaviour {
     public static GameController control = null;
-    public List<GameObject> blocks = new List<GameObject>(); // keep list to broadcast to
-    public int[,] grid;
     public GameObject[,] blockGrid;
     public Canvas canvas;
     
-    public Texture2D[] guiLives;
-    public Texture2D[] guiLevel;
-
     public Texture2D bombTex;
     public GameObject floatingText;
+    public GameObject explosionPrefab;
     public Camera gameCamera;
     public List<Vector2> open = new List<Vector2>();
     GUIText myGUIText;
     GUIStyle myGUIStyle;
-    //public Texture2D[] guiLives;
 
     bool paused = false;
     public bool canPause = true;
@@ -29,18 +24,23 @@ public class GameController : MonoBehaviour {
     public bool sceneEnding = false;
     public bool gameOver = false;
     public bool reversed = false;
+    bool rotating = false;
+    string Rules = "\n-------Rules------- \nMatch 4\n\n Left  \n\nRight  \n\n Space\n\n\n\nLD48: 31\nOne Screen\n\nDarioMarasco\n\nPolybox\n Games\n2014";
+    bool playing = false;
 
+    //public string Rules = "\n0x21B5";
 	//public AudioClip newWorldAvailableSound;
     //public AudioClip gameoverSound;
 
     public long score = 0;
     public float multiplyer = 1.0f;
     public float refresh = 1.0f;
-    public int gridWidth = 16;
-    public int gridHeight = 16;
+    public int gridWidth = 4;
+    public int gridHeight = 4;
     int blockScore = 50;
     int blockChainSize = 16; // min size to explode
     public int level = 3; // 3 is base level spawn new color blocks
+    public int gridsize = 4;
 
     //long threshold = 7500;
 
@@ -65,18 +65,29 @@ public class GameController : MonoBehaviour {
         refresh = Mathf.Clamp(refresh - .003f, 0.15f, 1f);
         StartCoroutine(MoveBlocks(refresh));
     }
+    void setupCamera() { 
+        gridHeight = gridsize;
+        gridWidth = gridsize;
+        gameCamera.orthographicSize = gridWidth / 2;
+        gameCamera.transform.position = new Vector3(gridWidth / 2, gridHeight / 2, -100f);
+
+    }
 
     IEnumerator IncrementLevel(float delay) {
         yield return new WaitForSeconds(delay);
-        level = Mathf.Clamp(level + 1, 3, 10);
-        StartCoroutine(IncrementLevel(delay + 5f)); // increse time between new blocks.  currently about 3 minutes to reach all blocks
+        if (level < 10) {
+            //gridsize += 2;
+            //setupCamera();
+            level = Mathf.Clamp(level + 1, 3, 10);
+            StartCoroutine(IncrementLevel(delay + 5f)); // increse time between new blocks.  currently about 3 minutes to reach all blocks
+        }
     }
 
-    IEnumerator rotateScreen(float time, float direction) {
+    IEnumerator rotateScreen(float time, int direction) {
         int steps = 15;
-        if (direction == 90f) {
+        if (direction == 90) {
             gravityDirection++;
-        } else if (direction == -90f) {
+        } else if (direction == -90) {
             gravityDirection--;
         }
         if (gravityDirection > 3)
@@ -84,38 +95,14 @@ public class GameController : MonoBehaviour {
         if (gravityDirection < 0)
             gravityDirection = 3;
 
+        
+
         for (int i = 0; i < steps; i++) {
-            gameCamera.transform.Rotate(gameCamera.transform.forward, direction / steps);
-            yield return new WaitForSeconds(time / steps);
+            gameCamera.transform.Rotate(gameCamera.transform.forward, direction / (float)steps);
+            yield return new WaitForSeconds(Time.deltaTime);
         }
     }
 
-    /*IEnumerator flipScreen(float time, float direction) {
-        reversed = !reversed;
-        int steps = 60;
-        if (direction == 180f) {
-            gravityDirection += 2;
-        } else if (direction == -180f) {
-            gravityDirection += 2;
-        }
-
-        if (gravityDirection > 3)
-            gravityDirection -= 3;
-            //gravityDirection = 0;
-        if (gravityDirection < 0)
-            gravityDirection += 3;
-            //gravityDirection = 3;
-
-        for (int i = 0; i < steps; i++) {
-            print("fucking  translating");
-            //gameCamera.transform.LookAt(new Vector3(10, 10, 0), gameCamera.transform.up);
-            print(steps / direction);
-            gameCamera.transform.position = Vector3.Slerp(new Vector3(10, 10, 10), new Vector3(10, 10, -10), (direction / steps));
-            //gameCamera.transform.Translate(gameCamera.transform.up * ((direction / steps)/100));
-            //gameCamera.transform.Rotate(gameCamera.transform.right, direction / steps);
-            yield return new WaitForSeconds(time / steps);
-        }
-    } TODO */
 
     public void UpdateBlocks() {
         if( gravityDirection == 0 || gravityDirection == 3) {
@@ -126,6 +113,7 @@ public class GameController : MonoBehaviour {
                         b = blockGrid[i, k].GetComponent<Block>().checkColors(b);
                         if (b.Count >= blockChainSize) {
                             destroyBlocks(b);
+                            //return;
                         }
                         if (blockGrid[i, k] == null)
                             continue;
@@ -186,6 +174,8 @@ public class GameController : MonoBehaviour {
     }
 
     void destroyBlocks(List<GameObject> a) {
+        long tot = 0;
+        Vector3 loc = new Vector3(5,5); // spawn in center by default
         List<GameObject> b = new List<GameObject>();
         for (int i = 0; i < a.Count; i++) {
             if (!b.Contains(a[i]))
@@ -193,14 +183,16 @@ public class GameController : MonoBehaviour {
         }
 
         for (int j = 0; j < b.Count; j++) {
-            print(b[j].GetComponent<Block>().x + " " + b[j].GetComponent<Block>().y);
+            loc = new Vector3(b[j].GetComponent<Block>().x, b[j].GetComponent<Block>().y, -30);
             Destroy(blockGrid[b[j].GetComponent<Block>().x, b[j].GetComponent<Block>().y]);
             Destroy(b[j]);
-            score += (long)(((int)Mathf.Pow(j, 2f) / 2 * blockScore) * multiplyer);
-            //blockGrid[b[j].GetComponent<Block>().x, b[j].GetComponent<Block>().y] = null;
-            //Destroy(b[j]);
-            //destory and add to points
+            GameObject explosion = (GameObject)Instantiate(explosionPrefab, loc, Quaternion.identity);
+            tot += (long)(((int)Mathf.Pow(j, 2f) / 2 * blockScore) * multiplyer);
         }
+        //draw floating text
+        //GameObject text = (GameObject)Instantiate(floatingText, loc, Quaternion.identity);
+        //text.GetComponent<floatingPoints>().text = "+" + tot;
+        score += tot;
     }
 
     void Push() {
@@ -295,7 +287,11 @@ public class GameController : MonoBehaviour {
         guiTexture.pixelInset = new Rect(0, 0, Screen.width, Screen.height);
         myGUIText = this.GetComponent<GUIText>();
         myGUIText.pixelOffset = new Vector2(Screen.width - 30f, Screen.height - 15f);
-        //myGUIStyle = new GUIStyle();*/
+        myGUIStyle = new GUIStyle();
+        myGUIStyle.fontStyle = myGUIText.fontStyle;
+        myGUIStyle.fontSize = myGUIText.fontSize;
+        myGUIStyle.font = myGUIText.font;
+        myGUIStyle.normal.textColor = Color.white;
         text.fontStyle = myGUIText.fontStyle;
         text.fontSize = myGUIText.fontSize;
         text.font = myGUIText.font;
@@ -310,7 +306,9 @@ public class GameController : MonoBehaviour {
         }
         StartCoroutine(IncreaseMultiplyer(10f));
         StartCoroutine(MoveBlocks(1f));
-        StartCoroutine(IncrementLevel(25f));
+        StartCoroutine(IncrementLevel(35f));
+        setupCamera();
+        Time.timeScale = 0f;
     }
 	
 	// Update is called once per frame
@@ -331,29 +329,21 @@ public class GameController : MonoBehaviour {
             AudioListener.pause = !AudioListener.pause;
         }
 
-        if (Input.GetButtonDown("Right")){
-            StartCoroutine(rotateScreen(0.05f, 90));
+        if (Input.GetButtonDown("Right")) {
+            StartCoroutine(rotateScreen(0.1f, 90));
         }
         if (Input.GetButtonDown("Left")) {
-            StartCoroutine(rotateScreen(0.05f, -90));
+            StartCoroutine(rotateScreen(0.1f, -90));
         }
 
         if (Input.GetButtonDown("Push")) {
             Push();
         }
-
-        /*
-        if (Input.GetButtonDown("FlipUp")) {
-            StartCoroutine(flipScreen(0.1f, 180));
-        }
-        if (Input.GetButtonDown("FlipDown")) {
-            StartCoroutine(flipScreen(0.1f, -180));
-        }*/
 	}
 
     void FixedUpdate() {
         if(!gameOver)
-            canvas.GetComponent<Text>().text = "SCORE:\n" + score.ToString();
+            canvas.GetComponent<Text>().text = "SCORE:\n" + score.ToString() + "\n\n" + Rules;
         
         // Check for endgame condition
         open.Clear();
@@ -366,7 +356,6 @@ public class GameController : MonoBehaviour {
         }
         if (open.Count == 0) {
             GameOver();
-            print("GAME OVER");
         }
 
         if (sceneStarting)
@@ -382,27 +371,12 @@ public class GameController : MonoBehaviour {
             GUILayout.Label("Game is paused!");
             if (GUILayout.Button("Unpause"))
                 paused = togglePause();
-        } else if (!gameOver) {
-            // lives - top left
-            //GUI.DrawTexture(new Rect(30f, 15f, 110f, 22f), guiLives[lives]);
-
-            /*// layer - bottom left
-            float boxHeight = 26f;
-            float boxDelim = 3f;
-            float boxWidth = 14f;
-            for (int i = 0; i <= level; i++) {
-                //if level alerted draw different Texture
-                if (playerLayer - 8 == i) {
-                    GUI.DrawTexture(new Rect(30f + i * (boxWidth + boxDelim), Screen.height - 30f - boxHeight, boxWidth, boxHeight), guiLevel[0]);
-                }
-                else {
-                    GUI.DrawTexture(new Rect(30f + i * (boxWidth + boxDelim), Screen.height - 30f - boxHeight, boxWidth, boxHeight), guiLevel[1]);
-                }
-            }*/
-
-            //bombs
-            /*GUI.Label(new Rect(Screen.width - 54f - 33f, Screen.height - 30f - boxHeight + 1f, boxWidth + 10f, boxHeight), "x" + pc.bombs.ToString(), myGUIStyle);
-            GUI.DrawTexture(new Rect(Screen.width - 54f, Screen.height - 30f - boxHeight, boxWidth + 10f, boxHeight), bombTex);*/
+        } else if (!playing) {
+            GUILayout.Label("\n\n\n\n\n\n\n\n\n\n\n\tRead the Rules and then Press Space!", myGUIStyle);
+            if (Input.GetButtonDown("Select") || Input.GetButtonDown("Push")) {
+                playing = true;
+                Time.timeScale = 1f;
+            }
         } else {
             myGUIText.text = "SCORE: " + score.ToString();
         }
@@ -464,11 +438,8 @@ public class GameController : MonoBehaviour {
 
     public void GameOver() {
         if (!gameOver) {
+            StartCoroutine(Shake(3f, 1f));
             gameOver = true;
-            //play game over sound
-            //pc.canMove = false;
-            //pc.canShoot = false;
-            //player.gameObject.active = false;
             //AudioSource.PlayClipAtPoint(gameoverSound, this.transform.position); TODO
             sceneEnding = true;
             FadeToBlack();
@@ -481,41 +452,6 @@ public class GameController : MonoBehaviour {
 
     void RestartGame() {
 		Application.LoadLevel ("Main");
-        //Application.LoadLevel("MainMenu_Mac");
         Destroy(this.gameObject);
     }
-
-    /*void CheckScore() {
-        if (score >= threshold) {
-            if (threshold < 15000) {
-                GameObject text = (GameObject)Instantiate(floatingText, this.transform.position + new Vector3(0,10f), Quaternion.identity);
-                text.guiText.fontSize = 30;
-                text.GetComponent<floatingPoints>().scroll = 0f;
-                text.GetComponent<floatingPoints>().scroll = 4f;
-                text.guiText.text = "WARNING: ATTACK FROM A NEW DIMENSION!";
-                Invoke("textSwitchWorlds", 2f);
-                
-                multiplyer += 0.75f;
-                level++;
-                threshold = 30000;
-				audio.PlayOneShot(newWorldAvailableSound);
-            } else if (threshold == 30000) {
-                GameObject text = (GameObject)Instantiate(floatingText, this.transform.position + new Vector3(0,15f), Quaternion.identity);
-                text.guiText.fontSize = 30;
-                text.GetComponent<floatingPoints>().scroll = 4f;
-                text.guiText.text = "WARNING: ATTACK FROM A NEW DIMENSION!";
-                multiplyer += 1f;
-                level++;
-				audio.PlayOneShot(newWorldAvailableSound);
-                threshold = 9999999999999;
-            } 
-        }
-    }*/
-
-    /*void textSwitchWorlds() {
-        GameObject text = (GameObject)Instantiate(floatingText, this.transform.position + new Vector3(0, 15f), Quaternion.identity);
-        text.guiText.fontSize = 30;
-        text.GetComponent<floatingPoints>().scroll = 4f;
-        text.guiText.text = "PRESS Q OR E TO SWITCH!";
-    }*/
 }
