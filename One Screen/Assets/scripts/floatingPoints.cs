@@ -7,6 +7,7 @@ public class floatingPoints : MonoBehaviour {
     float alpha = 1f;
     public float scroll = 0.15f;
     public float duration = 1.5f;
+    public string text;
 
 	// Use this for initialization
 	void Start () {
@@ -19,8 +20,9 @@ public class floatingPoints : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
+        myGUItext.text = text;
         if (alpha > 0) {
-            transform.Translate(Vector3.up * Time.deltaTime * scroll) ;
+            transform.Translate(Vector3.down * Time.deltaTime * scroll) ;
             //transform.position.Set(transform.position.x, transform.position.y + scroll * Time.deltaTime, transform.position.z);
             alpha -= Time.deltaTime / duration;
             myGUItext.material.color = new Color(1f, 1f, 1f, alpha);
